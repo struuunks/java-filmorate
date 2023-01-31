@@ -1,16 +1,14 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
-import javax.validation.constraints.Email;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
 public class User {
-    private int id;
+    private Long id;
     private String email;
     private String login;
     private String name;

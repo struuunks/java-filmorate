@@ -19,7 +19,7 @@ public class UserValidator {
             throw new ValidationException("Логин не может быть пустым или содержать пробелы");
         }
 
-        if(user.getName() == null){
+        if(user.getName() == null || user.getName().isEmpty()){
             user.setName(user.getLogin());
             log.info("Введенное имя пользователя было пустым");
         }

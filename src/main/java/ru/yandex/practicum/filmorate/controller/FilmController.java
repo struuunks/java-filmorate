@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.IdNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmValidator;
 
@@ -11,24 +12,25 @@ import java.util.Map;
 
 @Slf4j
 @RestController
+@RequestMapping("/films")
 public class FilmController {
 
     private final FilmValidator validator = new FilmValidator();
-    private final Map<Integer, Film> films = new HashMap<>();
+    private final Map<Long, Film> films = new HashMap<>();
 
-    private static int id = 0;
-    public int generateId(){
+    private static Long id = 0L;
+    public Long generateId(){
         return ++id;
     }
 
-    @GetMapping("/films")
+    @GetMapping
     public Collection<Film> getAllFilms(){
         log.info("Запрошен список фильмов");
         return films.values();
     }
 
 
-    @PostMapping(value = "/films")
+    @PostMapping
     public Film createFilm(@RequestBody Film film){
         log.info("Добавлен новый фильм");
         validator.validate(film);
@@ -37,11 +39,11 @@ public class FilmController {
         return film;
     }
 
-    @PutMapping(value = "/films")
+    @PutMapping
     public Film updateFilm(@RequestBody Film film){
         log.info("Обновление данных фильма");
         if (films.get(film.getId()) == null){
-            throw new NullPointerException("Фильм с таким айди не найден");
+            throw new IdNotFoundException("Фильм с айди" + film.getId() + "не найден");
         } else {
             validator.validate(film);
             films.put(film.getId(), film);
