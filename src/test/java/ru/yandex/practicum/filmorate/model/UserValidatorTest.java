@@ -4,7 +4,6 @@ import org.junit.jupiter.api.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +16,7 @@ class UserValidatorTest {
     @BeforeEach
     void beforeEach() {
         userValidator = new UserValidator();
-        user = new User(1L, "mail@mail.com", "Login", "Name", LocalDate.of(1995, 12, 1), new HashSet<>());
+        user = new User(1L, "mail@mail.com", "Login", "Name", LocalDate.of(1995, 12, 1));
     }
 
     @Test

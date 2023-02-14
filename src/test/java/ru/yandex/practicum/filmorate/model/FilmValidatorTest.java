@@ -4,7 +4,6 @@ import org.junit.jupiter.api.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +21,7 @@ class FilmValidatorTest {
     @BeforeEach
     void beforeEach() {
         filmValidator = new FilmValidator();
-        film = new Film(1L, "Name", "Description", LocalDate.of(1999, 1, 1), 60, new HashSet<>());
+        film = new Film(1L, "Name", "Description", LocalDate.of(1999, 1, 1), 60);
     }
 
     @Test
