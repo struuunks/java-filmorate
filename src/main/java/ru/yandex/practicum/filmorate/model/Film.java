@@ -9,9 +9,11 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+@Builder
 @Getter
 @Setter
 @AllArgsConstructor
+@EqualsAndHashCode
 public class Film {
      private Long id;
 
@@ -26,6 +28,11 @@ public class Film {
 
      @Positive
      private Integer duration;
+
+     private Set<Genre> genres;
+
+     @NonNull
+     private Mpa mpa;
      @JsonIgnore
      private final Set<Long> likes = new HashSet<>();
 }
