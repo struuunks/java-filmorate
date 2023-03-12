@@ -1,6 +1,5 @@
 
-
-
+![filmorate_diagram](https://user-images.githubusercontent.com/113509716/224560605-65bc445c-a5c2-4129-b824-a1f31d498275.png)
 
 Таблица FILMS:
 
@@ -43,3 +42,4 @@
 
   FILM_ID - айди фильма, уникальный ключ отсылающий к таблице FILMS;
   USER_ID - айди пользователя, уникальный ключ отсылающий к таблице USERS;
+   
