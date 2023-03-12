@@ -43,3 +43,24 @@
   FILM_ID - айди фильма, уникальный ключ отсылающий к таблице FILMS;
   USER_ID - айди пользователя, уникальный ключ отсылающий к таблице USERS;
    
+Примеры запросов:
+
+  Получение списка 10 популярных фильмов:
+    select f.* from films f
+    left join likes l on f.film_id = l.film_id
+    group by  f.film_id
+    order by count(l.user_id) desc
+    limit 10;
+    
+    
+  Получение списка всех фильмов:
+    select * from films;
+  
+  Получение спика всех пользователей:
+    select * from users;
+    
+  Получение списка друзей пользователя:
+    select u.user_id, u.email, u.name, u.login, u.birthday
+    from friends as f left join users as u
+    on f.friend_id = u.user_id where f.user_id = ?
+    order by u.user_id;
