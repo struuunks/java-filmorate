@@ -1,93 +1,91 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.dao.EmptyResultDataAccessException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.IdNotFoundException;
-import ru.yandex.practicum.filmorate.impl.FilmDbStorage;
-import ru.yandex.practicum.filmorate.impl.UserDbStorage;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.validator.FilmValidator;
+import ru.yandex.practicum.filmorate.model.FilmValidator;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level= AccessLevel.PRIVATE)
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class FilmService implements FilmStorage {
 
-    final FilmDbStorage filmDbStorage;
-    final UserDbStorage userDbStorage;
-    final FilmValidator validator;
+    InMemoryFilmStorage filmStorage;
+    InMemoryUserStorage userStorage;
+    final FilmValidator validator = new FilmValidator();
+
+    @Autowired
+    public FilmService(InMemoryFilmStorage filmStorage, InMemoryUserStorage userStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
+    }
 
 
     @Override
     public Collection<Film> getAllFilms() {
-        return filmDbStorage.getAllFilms();
+        log.info("Запрошен список фильмов");
+        return filmStorage.getAllFilms();
     }
 
     @Override
     public Film getFilmById(Long id) {
-        try {
-            filmDbStorage.getFilmById(id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new IdNotFoundException("Фильм с айди " + id + " не найден");
-        }
-
-        return filmDbStorage.getFilmById(id);
+        log.info("Запрошен фильм с айди " + id);
+        return filmStorage.getFilmById(id);
     }
 
     @Override
     public Film createFilm(Film film) {
         validator.validate(film);
-        return filmDbStorage.createFilm(film);
+        log.info("Добавлен новый фильм");
+        return filmStorage.createFilm(film);
     }
 
     @Override
     public Film updateFilm(Film film) {
-        try {
-            filmDbStorage.getFilmById(film.getId());
-        } catch (EmptyResultDataAccessException e) {
-            throw new IdNotFoundException("Фильм с айди " + film.getId() + " не найден");
-        }
-
+        log.info("Обновление данных фильма");
         validator.validate(film);
-        return filmDbStorage.updateFilm(film);
+        return filmStorage.updateFilm(film);
     }
 
     public void likeFilm(Long filmId, Long userId) {
-        try {
-            filmDbStorage.getFilmById(filmId);
-        } catch (EmptyResultDataAccessException e) {
+        log.info("Добавление лайка фильму с айди " + filmId + " пользователем с айди " + userId);
+        if (filmStorage.getFilms().get(filmId) == null) {
             throw new IdNotFoundException("Фильм с айди " + filmId + " не найден");
-        }
-
-        if (userDbStorage.getUserById(userId) == null) {
+        } else if (userStorage.getUsers().get(userId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
+        } else {
+            filmStorage.getFilms().get(filmId).getLikes().add(userId);
         }
-
-        filmDbStorage.likeFilm(filmId, userId);
     }
 
     public void deleteLike(Long filmId, Long userId) {
-        try {
-            filmDbStorage.getFilmById(filmId);
-        } catch (EmptyResultDataAccessException e) {
+        log.info("Удаление лайка у фильма с айди " + filmId + " пользователем с айди " + userId);
+        if (filmStorage.getFilms().get(filmId) == null) {
             throw new IdNotFoundException("Фильм с айди " + filmId + " не найден");
-        }
-
-        if (userDbStorage.getUserById(userId) == null) {
+        } else if (userStorage.getUsers().get(userId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
+        } else {
+            filmStorage.getFilms().get(filmId).getLikes().remove(userId);
         }
-
-        filmDbStorage.deleteLike(filmId, userId);
     }
 
     public List<Film> getMostLikedFilms(Integer count) {
-        return filmDbStorage.getMostLikedFilms(count);
+        log.info("Запрошен лист фильмов с наибольшим количеством лайков");
+        return filmStorage.getFilms().values()
+                .stream()
+                .sorted((o1, o2) -> o2.getLikes().size() - o1.getLikes().size())
+                .limit(count)
+                .collect(Collectors.toList());
     }
 }
