@@ -1,95 +1,110 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.IdNotFoundException;
-import ru.yandex.practicum.filmorate.impl.UserDbStorage;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.model.validator.UserValidator;
+import ru.yandex.practicum.filmorate.model.UserValidator;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@FieldDefaults(level= AccessLevel.PRIVATE)
 @Service
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@RequiredArgsConstructor
+@Slf4j
 public class UserService implements UserStorage {
-    final UserDbStorage userDbStorage;
-    final UserValidator validator;
+    InMemoryUserStorage storage;
+    final UserValidator validator= new UserValidator();
 
+    @Autowired
+    public UserService(InMemoryUserStorage storage) {
+        this.storage = storage;
+    }
 
     @Override
     public Collection<User> getAllUsers() {
-        try {
-            return userDbStorage.getAllUsers();
-        } catch (IncorrectResultSizeDataAccessException e) {
-            return Collections.emptyList();
-        }
+        log.info("Запрошен список пользователей");
+        return storage.getAllUsers();
     }
 
     @Override
     public User getUserById(Long id) {
-        if (userDbStorage.getUserById(id) == null) {
-            throw new IdNotFoundException("Пользователь с айди " + id + " не найден");
-        }
-        return userDbStorage.getUserById(id);
+        log.info("Запрошен пользователь с айди " + id);
+        return storage.getUserById(id);
     }
 
     @Override
     public User createUser(User user) {
+        log.info("Добавлен новый пользователь");
         validator.validate(user);
-        return userDbStorage.createUser(user);
+        return storage.createUser(user);
     }
 
     @Override
     public User updateUser(User user) {
-        if (userDbStorage.getUserById(user.getId()) == null) {
-            throw new IdNotFoundException("Пользователь с айди " + user.getId() + " не найден");
-        }
+        log.info("Обновление данных пользователя");
         validator.validate(user);
-        return userDbStorage.updateUser(user);
+        return storage.updateUser(user);
     }
 
     public void addFriend(Long userId, Long friendId) {
-        if (userDbStorage.getUserById(userId) == null) {
+        if (storage.getUsers().get(userId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
-        } else if (userDbStorage.getUserById(friendId) == null) {
+        } else if (storage.getUsers().get(friendId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + friendId + " не найден");
+        } else {
+            log.info("Пользователи с айди " + userId + " и " + friendId + " теперь друзья");
+            storage.getUsers().get(userId).getFriends().add(friendId);
+            storage.getUsers().get(friendId).getFriends().add(userId);
         }
-
-        userDbStorage.addFriend(userId, friendId);
     }
 
     public void deleteFriend(Long userId, Long friendId) {
-        if (userDbStorage.getUserById(userId) == null) {
+        if (storage.getUsers().get(userId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
-        } else if (userDbStorage.getUserById(friendId) == null) {
+        } else if (storage.getUsers().get(friendId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + friendId + " не найден");
+        } else {
+            log.info("Пользователи с айди " + userId + " и " + friendId + " больше не друзья");
+            storage.getUsers().get(userId).getFriends().remove(friendId);
+            storage.getUsers().get(friendId).getFriends().remove(userId);
         }
-
-        userDbStorage.deleteFriend(userId, friendId);
     }
 
     public Collection<User> getFriendsList(Long userId) {
-        if (userDbStorage.getUserById(userId) == null) {
+        log.info("Запрошен лист друзей пользователя с айди " + userId);
+        ArrayList<User> friends = new ArrayList<>();
+        if (storage.getUsers().containsKey(userId)) {
+            for (Long friendId : storage.getUsers().get(userId).getFriends()) {
+                friends.add(storage.getUsers().get(friendId));
+            }
+        } else {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
         }
-
-        return userDbStorage.getFriendsList(userId);
+        return friends;
     }
 
     public List<User> getMutualFriends(Long userId, Long otherUserId) {
-        if (userDbStorage.getUserById(userId) == null) {
+        log.info("Запрошен лист общих друзей пользователей с айди " + userId + " и " + otherUserId);
+        if (storage.getUsers().get(userId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + userId + " не найден");
-        } else if (userDbStorage.getUserById(otherUserId) == null) {
+        } else if (storage.getUsers().get(otherUserId) == null) {
             throw new IdNotFoundException("Пользователь с айди " + otherUserId + " не найден");
-        }
+        } else {
+            User user = storage.getUsers().get(userId);
+            User friendsUser = storage.getUsers().get(otherUserId);
 
-        return userDbStorage.getMutualFriends(userId, otherUserId);
+            return user.getFriends().stream()
+                    .filter(f -> friendsUser.getFriends().contains(f))
+                    .map(this::getUserById)
+                    .collect(Collectors.toList());
+        }
     }
 }
